@@ -257,8 +257,8 @@ public class ByBitAPI {
         Map<String, String> apiConfig = new HashMap<>();
         try {
 
-            Path path = Paths.get("D:\\dev\\api.json");
-            //Path path = Paths.get("/tmp/api.json");
+            //Path path = Paths.get("D:\\dev\\api.json");
+            Path path = Paths.get("/tmp/api.json");
             byte[] jsonData = Files.readAllBytes(path);
             ObjectMapper objectMapper = new ObjectMapper();
             apiConfig = objectMapper.readValue(jsonData, new TypeReference<Map<String, String>>() {});
