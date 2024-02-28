@@ -25,7 +25,7 @@ public class CalculateIndicator {
             getEma(priceInfoDtoList);
             priceInfoDtoList.sort(Comparator.comparing(PriceInfoDto::getTradeDate).reversed());
         }catch (Exception e) {
-            log.error("calculateIndicators Exception :"+e.toString());
+            throw new RuntimeException("calculate :"+ e.getMessage());
         }
     }
 
@@ -130,7 +130,6 @@ public class CalculateIndicator {
      * @param priceInfoDtoList
      */
     private void getStochastics(List<PriceInfoDto> priceInfoDtoList) {
-        //priceInfoDtoList.sort(Comparator.comparing(PriceInfoDto::getTradeDate)); //0822 lhj
         StochasticsOscilator stochasticsOscilator = new StochasticsOscilator();
         int n = 5; // Fast %K를 계산하는 데 사용되는 기간
         int m = 3; // Slow %K를 계산하는 데 사용되는 기간
@@ -153,12 +152,12 @@ public class CalculateIndicator {
                 .toArray();
         SimpleMovingAverage simpleMovingAverage = new SimpleMovingAverage();
         double[] sma10 = new double[priceInfoDtoList.size()];
-        double[] sma50 = new double[priceInfoDtoList.size()];
-        double[] sma100 = new double[priceInfoDtoList.size()];
+        double[] sma60 = new double[priceInfoDtoList.size()];
+        double[] sma120 = new double[priceInfoDtoList.size()];
         try {
             if(prices.length > 10) sma10 = simpleMovingAverage.calculate(prices,10).getSMA();
-            if(prices.length > 50) sma50 = simpleMovingAverage.calculate(prices,50).getSMA();
-            if(prices.length > 100) sma100 = simpleMovingAverage.calculate(prices,100).getSMA();
+            if(prices.length > 60) sma60 = simpleMovingAverage.calculate(prices,60).getSMA();
+            if(prices.length > 120) sma120 = simpleMovingAverage.calculate(prices,120).getSMA();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -166,8 +165,8 @@ public class CalculateIndicator {
         for (int i = 0; i < priceInfoDtoList.size(); i++) {
             PriceInfoDto priceInfoDto = priceInfoDtoList.get(i);
             priceInfoDto.setSma10(sma10[i]);
-            priceInfoDto.setSma50(sma50[i]);
-            priceInfoDto.setSma100(sma100[i]);
+            priceInfoDto.setSma60(sma60[i]);
+            priceInfoDto.setSma120(sma120[i]);
         }
 
     }
@@ -178,23 +177,14 @@ public class CalculateIndicator {
                 .toArray();
         ExponentialMovingAverage exponentialMovingAverage = new ExponentialMovingAverage();
         double[] ema10 = new double[priceInfoDtoList.size()];
-        double[] ema50 = new double[priceInfoDtoList.size()];
-        double[] ema100 = new double[priceInfoDtoList.size()];
-        double[] ema200 = new double[priceInfoDtoList.size()];
         try {
             ema10 = exponentialMovingAverage.calculate(prices,10).getEMA();
-            ema50 = exponentialMovingAverage.calculate(prices,50).getEMA();
-            ema100 = exponentialMovingAverage.calculate(prices,100).getEMA();
-            ema200 = exponentialMovingAverage.calculate(prices,200).getEMA();
         } catch (Exception e) {
             e.printStackTrace();
         }
         for (int i = 0; i < priceInfoDtoList.size(); i++) {
             PriceInfoDto priceInfoDto = priceInfoDtoList.get(i);
             priceInfoDto.setEma10(ema10[i]);
-            priceInfoDto.setEma50(ema50[i]);
-            priceInfoDto.setEma100(ema100[i]);
-            priceInfoDto.setEma200(ema200[i]);
         }
     }
 }
