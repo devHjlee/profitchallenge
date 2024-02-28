@@ -89,21 +89,15 @@ public class PriceInfoDto {
     @Comment("Stochastic SlowK")
     double slowD;
 
-    @Comment("단순 MA 5")
+    @Comment("단순 MA 10")
     double sma10;
-
-    @Comment("단순 MA 20")
-    double sma50;
 
     @Comment("단순 MA 60")
     double sma60;
 
     @Comment("단순 MA 120")
-    double sma100;
-    double ema10;
-    double ema20;
-    double ema50;
-    double ema100;
-    double ema200;
+    double sma120;
 
+    @Comment("EMA")
+    double ema10;
 }
