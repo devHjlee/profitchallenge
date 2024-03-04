@@ -118,9 +118,6 @@ public class PriceInfoService {
                     .setConnectionTimeout(5000)
                     .createSocket("wss://stream.bybit.com/v5/public/linear")
                     .addListener(new WebSocketAdapter() {
-
-                        public void onBinaryMessage(WebSocket websocket, byte[] binary) {
-                        }
                         public void onTextMessage(WebSocket websocket, String message) {
                             log.info(message);
                             if (!message.contains("success")) savePriceInfo(message,minute);
@@ -156,12 +153,9 @@ public class PriceInfoService {
     public void disconnect(String symbol) {
         WebSocket webSocket = (WebSocket) socketMap.get(symbol);
         if (webSocket != null && webSocket.isOpen()) {
-            socketMap.remove(symbol);
             webSocket.disconnect();
-
+            socketMap.remove(symbol);
             log.info("WebSocket with Symbol {} disconnected", symbol);
-        } else {
-            log.warn("WebSocket with Symbol {} not found or already disconnected", symbol);
         }
     }
 
