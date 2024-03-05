@@ -15,7 +15,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -68,13 +67,30 @@ public class SymbolService {
                             }
                         }
                     );
+
         } catch (IOException e) {
             log.error("saveSymbols Exception : "+e);
-            e.printStackTrace();
         }
     }
 
-    public void updateVolume() {
+    @Transactional
+    public void saveSymbolsRank() {
+
+        long startTime = System.currentTimeMillis();
+        List<Symbol> symbols = symbolRepository.findAll();
+        for (Symbol symbol: symbols) {
+            try {
+
+                byBitAPI.getCandle(symbol.getSymbol(),"D","1");
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        // 프로그램 종료 시간 기록
+        long endTime = System.currentTimeMillis();                // 실행 시간 계산
+        long executionTime = endTime - startTime;                // 실행 시간 출력
+        System.out.println(" 프로그램 실행 시간: " + executionTime + " 밀리초");
 
     }
 }

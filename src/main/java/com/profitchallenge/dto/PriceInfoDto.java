@@ -1,14 +1,13 @@
 package com.profitchallenge.dto;
 
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.*;
 import org.hibernate.annotations.Comment;
 
 
 @Getter
 @Setter
 @ToString
+@NoArgsConstructor
 public class PriceInfoDto {
 
     @Comment("심볼")
@@ -100,4 +99,16 @@ public class PriceInfoDto {
 
     @Comment("EMA")
     double ema10;
+
+    @Builder
+    public PriceInfoDto(String symbol, String tradeDate, double tradePrice, double openingPrice, double highPrice, double lowPrice, double tradeVolume) {
+        this.symbol = symbol;
+        this.tradeDate = tradeDate;
+        this.tradePrice = tradePrice;
+        this.openingPrice = openingPrice;
+        this.highPrice = highPrice;
+        this.lowPrice = lowPrice;
+        this.tradeVolume = tradeVolume;
+    }
+
 }

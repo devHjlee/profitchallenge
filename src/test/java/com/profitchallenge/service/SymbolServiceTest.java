@@ -16,4 +16,6 @@ class SymbolServiceTest {
     void saveSymbols() {
         symbolService.saveSymbols();
     }
+    @Test
+    void saveSymbolsRank() { symbolService.saveSymbolsRank(); }
 }
