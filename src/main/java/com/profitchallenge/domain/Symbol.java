@@ -17,17 +17,13 @@ import java.time.LocalDateTime;
 @Entity
 @Getter
 @Table(name="symbol")
-public class Symbol {
+public class Symbol implements Persistable<String>{
     @Id
     private String symbol;
 
     private double minPrice;
 
     private double minOrderQty;
-
-    @CreatedDate
-    private LocalDateTime createDate;
-
 
     @Builder
     public Symbol(String symbol, double minPrice, double minOrderQty) {
@@ -39,5 +35,15 @@ public class Symbol {
     public void updateSymbolInfo(double minPrice, double minOrderQty) {
         this.minPrice = minPrice;
         this.minOrderQty  = minOrderQty;
+    }
+
+    @Override
+    public String getId() {
+        return symbol;
+    }
+
+    @Override
+    public boolean isNew() {
+        return symbol == null;
     }
 }

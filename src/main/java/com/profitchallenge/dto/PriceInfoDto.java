@@ -11,7 +11,7 @@ import org.hibernate.annotations.Comment;
 @ToString
 public class PriceInfoDto {
 
-    @Comment("코인")
+    @Comment("심볼")
     String symbol;
 
     @Comment("거래 일자")
