@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.profitchallenge.bybit.ByBitAPI;
 import com.profitchallenge.domain.Symbol;
+import com.profitchallenge.dto.PriceInfoDto;
 import com.profitchallenge.dto.SymbolDto;
 import com.profitchallenge.repository.SymbolRepository;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +13,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -81,8 +86,26 @@ public class SymbolService {
         for (Symbol symbol: symbols) {
             try {
 
-                byBitAPI.getCandle(symbol.getSymbol(),"D","1");
+                String response = byBitAPI.getCandle(symbol.getSymbol(),"D","1");
+                List<PriceInfoDto> priceInfoList = new ArrayList<>();
+                ObjectMapper objectMapper = new ObjectMapper();
+                JsonNode rootNode = objectMapper.readTree(response);
+                JsonNode listNode = rootNode.path("result").path("list");
+                JsonNode symbolNode = rootNode.path("result").path("symbol");
 
+                for (JsonNode entry : listNode) {
+                    PriceInfoDto priceInfo = PriceInfoDto.builder()
+                            .symbol(symbolNode.asText())
+                            .tradeDate(convertDate(entry.get(0).asText()))
+                            .openingPrice(Double.parseDouble(entry.get(1).asText()))
+                            .highPrice(Double.parseDouble(entry.get(2).asText()))
+                            .lowPrice(Double.parseDouble(entry.get(3).asText()))
+                            .tradePrice(Double.parseDouble(entry.get(4).asText()))
+                            .tradeVolume(Double.parseDouble(entry.get(5).asText()))
+                            .build();
+
+                    priceInfoList.add(priceInfo);
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -92,5 +115,16 @@ public class SymbolService {
         long executionTime = endTime - startTime;                // 실행 시간 출력
         System.out.println(" 프로그램 실행 시간: " + executionTime + " 밀리초");
 
+    }
+
+    //타임스탬프 변환
+    private String convertDate(String timeStamp) {
+        long timestamp = Long.parseLong(timeStamp);
+
+        Instant instant = Instant.ofEpochMilli(timestamp);
+        LocalDateTime localDateTime = instant.atZone(ZoneId.systemDefault()).toLocalDateTime();
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+        return localDateTime.format(formatter);
     }
 }
