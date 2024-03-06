@@ -4,11 +4,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.profitchallenge.bybit.ByBitAPI;
 import com.profitchallenge.domain.Symbol;
+import com.profitchallenge.domain.SymbolRank;
 import com.profitchallenge.dto.PriceInfoDto;
 import com.profitchallenge.dto.SymbolDto;
+import com.profitchallenge.dto.SymbolRankDto;
+import com.profitchallenge.repository.SymbolRankRepository;
 import com.profitchallenge.repository.SymbolRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,7 +22,10 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.IntStream;
 
 @Slf4j
 @Service
@@ -26,6 +33,8 @@ import java.util.List;
 public class SymbolService {
     private final ByBitAPI byBitAPI;
     private final SymbolRepository symbolRepository;
+    private final SymbolRankRepository symbolRankRepository;
+    private final ModelMapper modelMapper;
 
     @Transactional
     public void saveSymbols() {
@@ -79,37 +88,64 @@ public class SymbolService {
     }
 
     @Transactional
-    public void saveSymbolsRank() {
-
+    public void saveSymbolRank() {
+        List<SymbolRankDto> symbolRankDtoList = new ArrayList<>();
         long startTime = System.currentTimeMillis();
         List<Symbol> symbols = symbolRepository.findAll();
+        List<SymbolRank> symbolRanks = symbolRankRepository.findByRankPKRankDate("2");
+        //symbols.removeAll(Arrays.stream(new String[""]).toArray());
+
         for (Symbol symbol: symbols) {
             try {
 
                 String response = byBitAPI.getCandle(symbol.getSymbol(),"D","1");
-                List<PriceInfoDto> priceInfoList = new ArrayList<>();
                 ObjectMapper objectMapper = new ObjectMapper();
                 JsonNode rootNode = objectMapper.readTree(response);
                 JsonNode listNode = rootNode.path("result").path("list");
                 JsonNode symbolNode = rootNode.path("result").path("symbol");
 
                 for (JsonNode entry : listNode) {
-                    PriceInfoDto priceInfo = PriceInfoDto.builder()
+                    double tradeVolume = Double.parseDouble(entry.get(1).asText()) * Double.parseDouble(entry.get(5).asText());
+                    double rateChange = ((Double.parseDouble(entry.get(4).asText()) - Double.parseDouble(entry.get(1).asText()))/Double.parseDouble(entry.get(1).asText()))*100;
+                    SymbolRankDto symbolRankDto = SymbolRankDto.builder()
+                            .ranking(0)
+                            .rankDate(convertDate(entry.get(0).asText()))
                             .symbol(symbolNode.asText())
-                            .tradeDate(convertDate(entry.get(0).asText()))
-                            .openingPrice(Double.parseDouble(entry.get(1).asText()))
-                            .highPrice(Double.parseDouble(entry.get(2).asText()))
-                            .lowPrice(Double.parseDouble(entry.get(3).asText()))
-                            .tradePrice(Double.parseDouble(entry.get(4).asText()))
-                            .tradeVolume(Double.parseDouble(entry.get(5).asText()))
+                            .tradeVolume(tradeVolume)
+                            .rateChange(rateChange)
                             .build();
-
-                    priceInfoList.add(priceInfo);
+                    symbolRankDtoList.add(symbolRankDto);
                 }
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
+
+        //Bybit에서 받아온 일별 거래대금(시작가*거래량) 기준으로 정렬
+        symbolRankDtoList.sort(Comparator.comparingDouble(SymbolRankDto::getTradeVolume).reversed());
+        //랭크설정
+        IntStream.range(0,symbolRankDtoList.size()).forEach(i -> symbolRankDtoList.get(i).setRanking(i+1));
+        //1~10위까지만 남기고 삭제
+        symbolRankDtoList.subList(10,symbolRankDtoList.size()).clear();
+
+        if (symbolRanks.isEmpty()) {
+            List<SymbolRank> r = symbolRankDtoList.stream().map(dto -> )
+        } else {
+
+        }
+        symbolRankDtoList.stream()
+                .filter(dto -> symbolRanks.stream()
+                        .anyMatch(rank -> rank.getSymbol().equals(dto.getSymbol()))
+                ).forEach(dto -> {
+                        for (SymbolRank symbolRank : symbolRanks) {
+                                //symbol.updateSymbolInfo(api.getMinPrice(), api.getMinOrderQty());
+                        }
+                    }
+                );
+//        for (SymbolRankDto symbolRankDto : symbolRankDtoList) {
+//            symbolRanks.stream().filter(ranks -> )
+//        }
+
         // 프로그램 종료 시간 기록
         long endTime = System.currentTimeMillis();                // 실행 시간 계산
         long executionTime = endTime - startTime;                // 실행 시간 출력
