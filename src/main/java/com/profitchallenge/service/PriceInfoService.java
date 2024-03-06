@@ -14,6 +14,7 @@ import com.profitchallenge.repository.PriceInfoRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -40,10 +41,10 @@ public class PriceInfoService {
     }
 
     //200개의 분 캔들 정보를 저장
+    @Transactional
     public void saveCandleInfo(String market,String minute) {
         try {
-            Thread.sleep(50);
-            String response = byBitAPI.getCandle(market,minute);
+            String response = byBitAPI.getCandle(market,minute,"201");
             List<PriceInfoDto> priceInfoList = new ArrayList<>();
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode rootNode = objectMapper.readTree(response);
@@ -51,14 +52,15 @@ public class PriceInfoService {
             JsonNode symbolNode = rootNode.path("result").path("symbol");
 
             for (JsonNode entry : listNode) {
-                PriceInfoDto priceInfo = new PriceInfoDto();
-                priceInfo.setSymbol(symbolNode.asText());
-                priceInfo.setTradeDate(convertTime(entry.get(0).asText()));
-                priceInfo.setOpeningPrice(Double.parseDouble(entry.get(1).asText()));
-                priceInfo.setHighPrice(Double.parseDouble(entry.get(2).asText()));
-                priceInfo.setLowPrice(Double.parseDouble(entry.get(3).asText()));
-                priceInfo.setTradePrice(Double.parseDouble(entry.get(4).asText()));
-                priceInfo.setTradeVolume(Double.parseDouble(entry.get(5).asText()));
+                PriceInfoDto priceInfo = PriceInfoDto.builder()
+                                        .symbol(symbolNode.asText())
+                                        .tradeDate(convertTime(entry.get(0).asText()))
+                                        .openingPrice(Double.parseDouble(entry.get(1).asText()))
+                                        .highPrice(Double.parseDouble(entry.get(2).asText()))
+                                        .lowPrice(Double.parseDouble(entry.get(3).asText()))
+                                        .tradePrice(Double.parseDouble(entry.get(4).asText()))
+                                        .tradeVolume(Double.parseDouble(entry.get(5).asText()))
+                                        .build();
 
                 priceInfoList.add(priceInfo);
             }
@@ -118,9 +120,6 @@ public class PriceInfoService {
                     .setConnectionTimeout(5000)
                     .createSocket("wss://stream.bybit.com/v5/public/linear")
                     .addListener(new WebSocketAdapter() {
-
-                        public void onBinaryMessage(WebSocket websocket, byte[] binary) {
-                        }
                         public void onTextMessage(WebSocket websocket, String message) {
                             log.info(message);
                             if (!message.contains("success")) savePriceInfo(message,minute);
@@ -156,33 +155,31 @@ public class PriceInfoService {
     public void disconnect(String symbol) {
         WebSocket webSocket = (WebSocket) socketMap.get(symbol);
         if (webSocket != null && webSocket.isOpen()) {
-            socketMap.remove(symbol);
             webSocket.disconnect();
-
+            socketMap.remove(symbol);
             log.info("WebSocket with Symbol {} disconnected", symbol);
-        } else {
-            log.warn("WebSocket with Symbol {} not found or already disconnected", symbol);
         }
     }
 
     //웹소켓을 통해 받아온 정보에 대해 변환
     private PriceInfoDto messageConvert(String message) throws JsonProcessingException {
+        PriceInfoDto priceInfo = null;
         ObjectMapper objectMapper = new ObjectMapper();
-        PriceInfoDto priceInfo = new PriceInfoDto();
-
         JsonNode rootNode = objectMapper.readTree(message);
         JsonNode dataNode = rootNode.path("data");
         String symbol = rootNode.get("topic").asText();
 
         if (dataNode.isArray() && dataNode.size() > 0) {
             JsonNode firstEntry = dataNode.get(0);
-            priceInfo.setTradeDate(convertTime(firstEntry.get("start").asText()));
-            priceInfo.setSymbol(symbol.substring(symbol.lastIndexOf(".")+1));
-            priceInfo.setTradePrice(Double.parseDouble(firstEntry.get("close").asText()));
-            priceInfo.setOpeningPrice(Double.parseDouble(firstEntry.get("open").asText()));
-            priceInfo.setHighPrice(Double.parseDouble(firstEntry.get("high").asText()));
-            priceInfo.setLowPrice(Double.parseDouble(firstEntry.get("low").asText()));
-            priceInfo.setTradeVolume(Double.parseDouble(firstEntry.get("volume").asText()));
+            priceInfo = PriceInfoDto.builder()
+                    .symbol(symbol.substring(symbol.lastIndexOf(".")+1))
+                    .tradeDate(convertTime(firstEntry.get("start").asText()))
+                    .openingPrice(Double.parseDouble(firstEntry.get("open").asText()))
+                    .highPrice(Double.parseDouble(firstEntry.get("high").asText()))
+                    .lowPrice(Double.parseDouble(firstEntry.get("low").asText()))
+                    .tradePrice(Double.parseDouble(firstEntry.get("close").asText()))
+                    .tradeVolume(Double.parseDouble(firstEntry.get("volume").asText()))
+                    .build();
         }
         return priceInfo;
     }

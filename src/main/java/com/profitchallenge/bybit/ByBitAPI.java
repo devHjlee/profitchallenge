@@ -34,8 +34,8 @@ public class ByBitAPI {
     }
 
     // 코인에 대한 캔들정보 수집
-    public String getCandle(String market,String minute) throws IOException {
-        String url = "https://api.bybit.com/v5/market/kline?category=inverse&symbol="+market+"&interval="+minute+"&limit=1000";
+    public String getCandle(String market,String minute,String limit) throws IOException {
+        String url = "https://api.bybit.com/v5/market/kline?category=inverse&symbol="+market+"&interval="+minute+"&limit="+limit;
         return getRequest(url);
     }
 
