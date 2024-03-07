@@ -5,14 +5,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.profitchallenge.bybit.ByBitAPI;
 import com.profitchallenge.domain.Symbol;
 import com.profitchallenge.domain.SymbolRank;
-import com.profitchallenge.dto.PriceInfoDto;
 import com.profitchallenge.dto.SymbolDto;
 import com.profitchallenge.dto.SymbolRankDto;
 import com.profitchallenge.repository.SymbolRankRepository;
 import com.profitchallenge.repository.SymbolRepository;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,7 +21,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -34,7 +32,6 @@ public class SymbolService {
     private final ByBitAPI byBitAPI;
     private final SymbolRepository symbolRepository;
     private final SymbolRankRepository symbolRankRepository;
-    private final ModelMapper modelMapper;
 
     @Transactional
     public void saveSymbols() {
@@ -59,28 +56,19 @@ public class SymbolService {
                 }
             }
 
-            //새로운 심볼 저장
-            apiSymbols.stream()
-                    .filter(api -> originSymbols.stream()
-                            .noneMatch(entity -> entity.getSymbol().equals(api.getSymbol())))
-                    .forEach(api->{
-                            symbolRepository.save(api.toEntity());
-                        }
-                     );
 
-            //심볼 정보중 금액,수량 변경에 대한 정보 업데이트
-            apiSymbols.stream()
-                    .filter(api -> originSymbols.stream()
-                            .anyMatch(entity -> entity.getSymbol().equals(api.getSymbol()) && (entity.getMinPrice() != api.getMinPrice() || entity.getMinOrderQty() != api.getMinOrderQty()) )
-                    )
-                    .forEach(api->{
-                            for (Symbol symbol : originSymbols) {
-                                if (symbol.getSymbol().equals(api.getSymbol())) {
-                                    symbol.updateSymbolInfo(api.getMinPrice(), api.getMinOrderQty());
-                                }
-                            }
-                        }
-                    );
+            apiSymbols.forEach(api -> {
+                //새로운 심볼 저장
+                if (originSymbols.stream().noneMatch(entity -> entity.getSymbol().equals(api.getSymbol()))) {
+                    symbolRepository.save(api.toEntity());
+                } else {
+                    // 심볼 정보가 변경된 경우 업데이트
+                    originSymbols.stream()
+                            .filter(symbol -> symbol.getSymbol().equals(api.getSymbol()))
+                            .filter(symbol -> symbol.getMinPrice() != api.getMinPrice() || symbol.getMinOrderQty() != api.getMinOrderQty())
+                            .forEach(symbol -> symbol.updateSymbolInfo(api.getMinPrice(), api.getMinOrderQty()));
+                }
+            });
 
         } catch (IOException e) {
             log.error("saveSymbols Exception : "+e);
@@ -93,7 +81,6 @@ public class SymbolService {
         long startTime = System.currentTimeMillis();
         List<Symbol> symbols = symbolRepository.findAll();
         List<SymbolRank> symbolRanks = symbolRankRepository.findByRankPKRankDate("2");
-        //symbols.removeAll(Arrays.stream(new String[""]).toArray());
 
         for (Symbol symbol: symbols) {
             try {
@@ -129,22 +116,12 @@ public class SymbolService {
         symbolRankDtoList.subList(10,symbolRankDtoList.size()).clear();
 
         if (symbolRanks.isEmpty()) {
-            List<SymbolRank> r = symbolRankDtoList.stream().map(dto -> )
+            for (SymbolRankDto symbolRankDto : symbolRankDtoList) {
+                symbolRankRepository.save(symbolRankDto.toEntity());
+            }
         } else {
 
         }
-        symbolRankDtoList.stream()
-                .filter(dto -> symbolRanks.stream()
-                        .anyMatch(rank -> rank.getSymbol().equals(dto.getSymbol()))
-                ).forEach(dto -> {
-                        for (SymbolRank symbolRank : symbolRanks) {
-                                //symbol.updateSymbolInfo(api.getMinPrice(), api.getMinOrderQty());
-                        }
-                    }
-                );
-//        for (SymbolRankDto symbolRankDto : symbolRankDtoList) {
-//            symbolRanks.stream().filter(ranks -> )
-//        }
 
         // 프로그램 종료 시간 기록
         long endTime = System.currentTimeMillis();                // 실행 시간 계산
