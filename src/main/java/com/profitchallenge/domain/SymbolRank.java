@@ -21,13 +21,22 @@ public class SymbolRank implements Persistable<RankPK>{
     private String symbol;
     private double tradeVolume;
     private double rateChange;
+    private String status;
+
+    public void updateRaking(String symbol, double tradeVolume, double rateChange, String status) {
+        this.symbol = symbol;
+        this.tradeVolume = tradeVolume;
+        this.rateChange = rateChange;
+        this.status = status;
+    }
 
     @Builder
-    public SymbolRank(RankPK rankPK, String symbol,double tradeVolume, double rateChange) {
+    public SymbolRank(RankPK rankPK, String symbol,double tradeVolume, double rateChange, String status) {
         this.rankPK = rankPK;
         this.symbol = symbol;
         this.tradeVolume = tradeVolume;
         this.rateChange = rateChange;
+        this.status = status;
     }
 
     @Override

@@ -16,14 +16,16 @@ public class SymbolRankDto {
     private String symbol;
     private double tradeVolume;
     private double rateChange;
+    private String status;
 
     @Builder
-    public SymbolRankDto (int ranking, String rankDate, String symbol, double tradeVolume, double rateChange) {
+    public SymbolRankDto (int ranking, String rankDate, String symbol, double tradeVolume, double rateChange, String status) {
         this.ranking = ranking;
         this.rankDate = rankDate;
         this.symbol = symbol;
         this.tradeVolume = tradeVolume;
         this.rateChange = rateChange;
+        this.status = status;
     }
 
     public SymbolRank toEntity () {
@@ -32,6 +34,7 @@ public class SymbolRankDto {
                 .symbol(symbol)
                 .rateChange(rateChange)
                 .tradeVolume(tradeVolume)
+                .status(status)
                 .build();
     }
 }

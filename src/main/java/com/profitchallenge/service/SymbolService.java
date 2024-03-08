@@ -23,6 +23,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @Slf4j
@@ -78,9 +80,8 @@ public class SymbolService {
     @Transactional
     public void saveSymbolRank() {
         List<SymbolRankDto> symbolRankDtoList = new ArrayList<>();
-        long startTime = System.currentTimeMillis();
         List<Symbol> symbols = symbolRepository.findAll();
-        List<SymbolRank> symbolRanks = symbolRankRepository.findByRankPKRankDate("2");
+        List<SymbolRank> symbolRanks = symbolRankRepository.findByRankPKRankDate("20240308");
 
         for (Symbol symbol: symbols) {
             try {
@@ -111,7 +112,12 @@ public class SymbolService {
         //Bybit에서 받아온 일별 거래대금(시작가*거래량) 기준으로 정렬
         symbolRankDtoList.sort(Comparator.comparingDouble(SymbolRankDto::getTradeVolume).reversed());
         //랭크설정
-        IntStream.range(0,symbolRankDtoList.size()).forEach(i -> symbolRankDtoList.get(i).setRanking(i+1));
+        IntStream.range(0, symbolRankDtoList.size())
+                .forEach(i -> {
+                    SymbolRankDto symbolRankDto = symbolRankDtoList.get(i);
+                    symbolRankDto.setRanking(i + 1);
+                    symbolRankDto.setStatus("NEW");
+                });
         //1~10위까지만 남기고 삭제
         symbolRankDtoList.subList(10,symbolRankDtoList.size()).clear();
 
@@ -120,14 +126,25 @@ public class SymbolService {
                 symbolRankRepository.save(symbolRankDto.toEntity());
             }
         } else {
-
+            symbolRankDtoList.forEach(dto ->{
+                        for (SymbolRank symbolRank : symbolRanks) {
+                            if (dto.getSymbol().equals(symbolRank.getSymbol())) {
+                                if (symbolRank.getRankPK().getRanking() < dto.getRanking()) {
+                                    dto.setStatus("DOWN");
+                                } else if (symbolRank.getRankPK().getRanking() > dto.getRanking()) {
+                                    dto.setStatus("UP");
+                                }
+                            }
+                        }
+                    }
+            );
+            for (int i = 0; i < 10; i++) {
+                symbolRanks.get(i).updateRaking(symbolRankDtoList.get(i).getSymbol()
+                        ,symbolRankDtoList.get(i).getTradeVolume()
+                        ,symbolRankDtoList.get(i).getRateChange()
+                        ,symbolRankDtoList.get(i).getStatus());
+            }
         }
-
-        // 프로그램 종료 시간 기록
-        long endTime = System.currentTimeMillis();                // 실행 시간 계산
-        long executionTime = endTime - startTime;                // 실행 시간 출력
-        System.out.println(" 프로그램 실행 시간: " + executionTime + " 밀리초");
-
     }
 
     //타임스탬프 변환
