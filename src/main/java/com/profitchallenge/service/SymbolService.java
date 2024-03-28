@@ -133,6 +133,8 @@ public class SymbolService {
                                     dto.setStatus("DOWN");
                                 } else if (symbolRank.getRankPK().getRanking() > dto.getRanking()) {
                                     dto.setStatus("UP");
+                                } else {
+                                    dto.setStatus("UNCHANGED");
                                 }
                             }
                         }
